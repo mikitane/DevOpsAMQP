@@ -4,7 +4,9 @@ import os
 from datetime import datetime
 
 BROKER_NAME = 'broker_service'
-QUEUES = ['my.o', 'my.i']
+EXCHANGE = 'topic_exchange'
+ROUTING_KEY = 'my.*'
+OBSE_QUEUE = 'obse_queue'
 LOG_FILE_PATH = '/output/logs.txt'
 
 
@@ -29,6 +31,7 @@ def on_message(channel, method, properties, body):
         topic=topic,
         message=message
     )
+    print(log_message)
 
     f = open(LOG_FILE_PATH, "a")
     f.write(log_message)
@@ -42,14 +45,15 @@ def main():
     connection = establish_connection()
     channel = connection.channel()
 
-    for queue in QUEUES:
-        channel.queue_declare(queue=queue)
-        channel.basic_consume(queue=queue,
-                              auto_ack=True,
-                              on_message_callback=on_message)
+    channel.exchange_declare(exchange=EXCHANGE, exchange_type='topic')
+    channel.queue_declare(queue=OBSE_QUEUE)
+    channel.queue_bind(exchange=EXCHANGE, queue=OBSE_QUEUE, routing_key=ROUTING_KEY)
+
+    channel.basic_consume(queue=OBSE_QUEUE,
+                          auto_ack=True,
+                          on_message_callback=on_message)
 
     channel.start_consuming()
-
 
 try:
     main()

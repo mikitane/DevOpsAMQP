@@ -3,9 +3,10 @@ import time
 import os
 
 BROKER_NAME = 'broker_service'
-EXCHANGE = ''
-CONSUME_QUEUE = 'my.o'
-PUBLISH_QUEUE = 'my.i'
+EXCHANGE = 'topic_exchange'
+CONSUME_ROUTING_KEY = 'my.o'
+PUBLISH_ROUTING_KEY = 'my.i'
+IMED_QUEUE = 'imed_queue'
 
 
 def establish_connection(retries=0):
@@ -26,7 +27,7 @@ def on_message(channel, method, properties, body):
     new_message = 'Got {}'.format(orig_message)
 
     channel.basic_publish(exchange=EXCHANGE,
-                          routing_key=PUBLISH_QUEUE,
+                          routing_key=PUBLISH_ROUTING_KEY,
                           body=new_message)
 
 
@@ -34,10 +35,11 @@ def main():
     connection = establish_connection()
     channel = connection.channel()
 
-    channel.queue_declare(queue=CONSUME_QUEUE)
-    channel.queue_declare(queue=PUBLISH_QUEUE)
+    channel.exchange_declare(exchange=EXCHANGE, exchange_type='topic')
+    channel.queue_declare(queue=IMED_QUEUE)
+    channel.queue_bind(exchange=EXCHANGE, queue=IMED_QUEUE, routing_key=CONSUME_ROUTING_KEY)
 
-    channel.basic_consume(queue=CONSUME_QUEUE,
+    channel.basic_consume(queue=IMED_QUEUE,
                           auto_ack=True,
                           on_message_callback=on_message)
 
